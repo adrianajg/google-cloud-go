@@ -54,8 +54,8 @@ func main() {
 	googleapisDir := flag.String("googleapis-dir", "", "Path to googleapis/googleapis repo.")
 	directories := flag.String("dirs", "", "Comma-separated list of module names to run (not paths).")
 	branchPrefix := flag.String("branch", "owl-bot-copy-", "The prefix of the branch that OwlBot opens when working on a PR.")
-	githubUsername := flag.String("gh-user", "googleapis", "GitHub username where repo lives.")
-	prFilepath := flag.String("pr-file", os.Getenv("NEW_PULL_REQUEST_TEXT_PATH"), "Path at which to write text file if changing PR title or body.")
+	githubUsername := flag.String("gh-user", "adrianajg", "GitHub username where repo lives.")
+	prFilepath := flag.String("pr-file", "internal/postprocessor/NEW_PULL_REQUEST_TEXT.txt", "Path at which to write text file if changing PR title or body.")
 
 	flag.Parse()
 

@@ -1,0 +1,18 @@
+docker:
+  image: postprocessor:latest
+
+deep-remove-regex:
+  - /accessapproval/apiv1
+
+deep-preserve-regex:
+  - /accessapproval/apiv1/gapic_metadata.json
+  - /accessapproval/apiv1/version.go
+
+# will have a different regex for each client
+deep-copy-regex:
+  - source: /google/cloud/accessapproval/v1/cloud.google.com/go/accessapproval
+    dest: /accessapproval
+  - source: /google/cloud/accessapproval/v1/google.golang.org/genproto/googleapis/cloud/accessapproval/v1
+    dest: /accessapproval/apiv1/accessapprovalpb
+
+api-name: REPLACEME
