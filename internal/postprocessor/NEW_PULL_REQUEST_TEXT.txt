@@ -1,0 +1,20 @@
+feat(accessapproval): update protos to include InvalidateApprovalReq…
+
+- [ ] Regenerate this pull request now.
+
+…uest and GetAccessApprovalServiceAccount APIs (https://github.com/googleapis/google-cloud-php/pull/5288)
+
+* feat: update protos to include InvalidateApprovalRequest and GetAccessApprovalServiceAccount APIs
+
+PiperOrigin-RevId: 449820922
+
+Source-Link: https://github.com/googleapis/googleapis/commit/96825848ff85e3edefa9171e97571a8a05ede986
+
+Source-Link: https://github.com/googleapis/googleapis-gen/commit/09360c95ca12aff00bcd2cfa2f7614bbb3e29bf3
+Copy-Tag: eyJwIjoiQWNjZXNzQXBwcm92YWwvLk93bEJvdC55YW1sIiwiaCI6IjA5MzYwYzk1Y2ExMmFmZjAwYmNkMmNmYTJmNzYxNGJiYjNlMjliZjMifQ==
+
+* 🦉 Updates from OwlBot post-processor
+
+See https://github.com/googleapis/repo-automation-bots/blob/main/packages/owl-bot/README.md
+
+Co-authored-by: Owl Bot <gcf-owl-bot[bot]@users.noreply.github.com>

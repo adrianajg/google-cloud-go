@@ -22,7 +22,8 @@ import (
 	"context"
 
 	accessapproval "cloud.google.com/go/accessapproval/apiv1"
-	accessapprovalpb "cloud.google.com/go/accessapproval/apiv1/accessapprovalpb"
+
+	accessapprovalpb "google.golang.org/genproto/googleapis/cloud/accessapproval/v1"
 )
 
 func main() {
@@ -40,7 +41,7 @@ func main() {
 
 	req := &accessapprovalpb.GetAccessApprovalServiceAccountMessage{
 		// TODO: Fill request struct fields.
-		// See https://pkg.go.dev/cloud.google.com/go/accessapproval/apiv1/accessapprovalpb#GetAccessApprovalServiceAccountMessage.
+		// See https://pkg.go.dev/google.golang.org/genproto/googleapis/cloud/accessapproval/v1#GetAccessApprovalServiceAccountMessage.
 	}
 	resp, err := c.GetAccessApprovalServiceAccount(ctx, req)
 	if err != nil {
