@@ -123,14 +123,18 @@ require (
 	cloud.google.com/go/websecurityscanner v1.4.0
 	cloud.google.com/go/workflows v1.9.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	google.golang.org/api v0.102.0
+	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221109142239-94d6d90a7d66
 )
 
 require (
+	cloud.google.com/go/maps v0.0.0-00010101000000-000000000000
+	cloud.google.com/go/recaptchaenterprise/v2 v2.5.0
+	cloud.google.com/go/vision/v2 v2.5.0
+)
+
+require (
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
-	cloud.google.com/go/recaptchaenterprise/v2 v2.5.0 // indirect
-	cloud.google.com/go/vision/v2 v2.5.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
@@ -396,3 +400,5 @@ replace cloud.google.com/go/edgecontainer => ../../../edgecontainer
 replace cloud.google.com/go/compute/metadata => ../../../compute/metadata
 
 replace cloud.google.com/go/longrunning => ../../../longrunning
+
+replace cloud.google.com/go/maps => ../../../maps
