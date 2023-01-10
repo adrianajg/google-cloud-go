@@ -59,7 +59,7 @@ func TestProcessCommit(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:  "first test",
+			name:  "test processCommit",
 			title: "feat: [REPLACEME] Adds named reservation to InstancePolicy",
 			body: `- [ ] Regenerate this pull request now.
 
