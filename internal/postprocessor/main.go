@@ -65,6 +65,8 @@ func main() {
 	log.Println("branch set to", *branchPrefix)
 	log.Println("prFilepath is", *prFilepath)
 
+	// we need to get scopes here
+
 	var modules []string
 	if *directories != "" {
 		dirSlice := strings.Split(*directories, ",")
@@ -91,7 +93,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-
+	// need to get modules in here
 	c := &config{
 		googleapisDir:  *googleapisDir,
 		googleCloudDir: *clientRoot,
@@ -137,11 +139,12 @@ func (c *config) run(ctx context.Context) error {
 }
 
 // RegenSnippets regenerates the snippets for all GAPICs configured to be generated.
-func (c *config) RegenSnippets() error {
+func (c *config) RegenSnippets(scopes []string) error {
 	log.Println("regenerating snippets")
-
+	// this stays the same, says where to generate snippets to
 	snippetDir := filepath.Join(c.googleCloudDir, "internal", "generated", "snippets")
-	apiShortnames, err := generator.ParseAPIShortnames(c.googleapisDir, generator.MicrogenGapicConfigs, generator.ManualEntries)
+	// this needs to change so we are only parsing shortnames for particular directories, probably need to change the c.googleapisDir
+	apiShortnames, err := parseAPIShortnames(c.googleapisDir, c.modules, generator.MicrogenGapicConfigs, generator.ManualEntries)
 
 	if err != nil {
 		return err
@@ -157,6 +160,39 @@ func (c *config) RegenSnippets() error {
 	}
 
 	return nil
+}
+
+func parseAPIShortnames(googleapisDir string, scopes []string, confs []*MicrogenConfig, manualEntries []ManifestEntry) (map[string]string, error) {
+	shortnames := map[string]string{}
+	for _, conf := range confs {
+		yamlPath := filepath.Join(googleapisDir, conf.InputDirectoryPath, conf.ApiServiceConfigPath)
+		yamlFile, err := os.Open(yamlPath)
+		if err != nil {
+			return nil, err
+		}
+		config := struct {
+			Name string `yaml:"name"`
+		}{}
+		if err := yaml.NewDecoder(yamlFile).Decode(&config); err != nil {
+			return nil, fmt.Errorf("decode: %v", err)
+		}
+		shortname := strings.TrimSuffix(config.Name, ".googleapis.com")
+		for _, scope := range scopes {
+			if shortname == scope {
+				shortnames[conf.ImportPath] = shortname
+			}
+		}
+	}
+
+	// Do our best for manuals.
+	for _, manual := range manualEntries {
+		p := strings.TrimPrefix(manual.DistributionName, "cloud.google.com/go/")
+		if strings.Contains(p, "/") {
+			p = p[0:strings.Index(p, "/")]
+		}
+		shortnames[manual.DistributionName] = p
+	}
+	return shortnames, nil
 }
 
 func (c *config) replaceAllForSnippets(googleCloudDir, snippetDir string) error {
