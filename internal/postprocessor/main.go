@@ -71,7 +71,7 @@ func main() {
 	if *directories != "" {
 		dirSlice := strings.Split(*directories, ",")
 		for _, dir := range dirSlice {
-			modules = append(modules, filepath.Join(*clientRoot, dir))
+			modules = append(modules, dir)
 		}
 		log.Println("Postprocessor running on", modules)
 	} else {
@@ -120,26 +120,26 @@ type config struct {
 }
 
 func (c *config) run(ctx context.Context) error {
-	if err := gocmd.ModTidyAll(c.googleCloudDir); err != nil {
-		return err
-	}
-	if err := gocmd.Vet(c.googleCloudDir); err != nil {
-		return err
-	}
+	// if err := gocmd.ModTidyAll(c.googleCloudDir); err != nil {
+	// 	return err
+	// }
+	// if err := gocmd.Vet(c.googleCloudDir); err != nil {
+	// 	return err
+	// }
 	if err := c.RegenSnippets(); err != nil {
 		return err
 	}
-	if _, err := c.Manifest(generator.MicrogenGapicConfigs); err != nil {
-		return err
-	}
-	if err := c.AmendPRDescription(ctx); err != nil {
-		return err
-	}
+	// if _, err := c.Manifest(generator.MicrogenGapicConfigs); err != nil {
+	// 	return err
+	// }
+	// if err := c.AmendPRDescription(ctx); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
 // RegenSnippets regenerates the snippets for all GAPICs configured to be generated.
-func (c *config) RegenSnippets(scopes []string) error {
+func (c *config) RegenSnippets() error {
 	log.Println("regenerating snippets")
 	// this stays the same, says where to generate snippets to
 	snippetDir := filepath.Join(c.googleCloudDir, "internal", "generated", "snippets")
@@ -162,9 +162,21 @@ func (c *config) RegenSnippets(scopes []string) error {
 	return nil
 }
 
-func parseAPIShortnames(googleapisDir string, scopes []string, confs []*MicrogenConfig, manualEntries []ManifestEntry) (map[string]string, error) {
+func parseAPIShortnames(googleapisDir string, scopes []string, confs []*generator.MicrogenConfig, manualEntries []generator.ManifestEntry) (map[string]string, error) {
 	shortnames := map[string]string{}
 	for _, conf := range confs {
+		confInScope := false
+		if len(scopes) == 0 {
+			confInScope = true
+		}
+		for _, scope := range scopes {
+			if scope == conf.Pkg {
+				confInScope = true
+			}
+		}
+		if !confInScope {
+			continue
+		}
 		yamlPath := filepath.Join(googleapisDir, conf.InputDirectoryPath, conf.ApiServiceConfigPath)
 		yamlFile, err := os.Open(yamlPath)
 		if err != nil {
@@ -190,7 +202,11 @@ func parseAPIShortnames(googleapisDir string, scopes []string, confs []*Microgen
 		if strings.Contains(p, "/") {
 			p = p[0:strings.Index(p, "/")]
 		}
-		shortnames[manual.DistributionName] = p
+		for _, scope := range scopes {
+			if p == scope {
+				shortnames[manual.DistributionName] = p
+			}
+		}
 	}
 	return shortnames, nil
 }
@@ -199,8 +215,12 @@ func (c *config) replaceAllForSnippets(googleCloudDir, snippetDir string) error 
 	return execv.ForEachMod(googleCloudDir, func(dir string) error {
 		if c.modules != nil {
 			for _, mod := range c.modules {
-				if !strings.Contains(dir, mod) {
-					return nil
+				dirMod, err := gocmd.ListModName(dir)
+				if err != nil {
+					return err
+				}
+				if dirMod != mod {
+					return filepath.SkipDir
 				}
 			}
 		}
