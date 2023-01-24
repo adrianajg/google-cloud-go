@@ -145,11 +145,14 @@ func (c *config) RegenSnippets() error {
 	snippetDir := filepath.Join(c.googleCloudDir, "internal", "generated", "snippets")
 	// this needs to change so we are only parsing shortnames for particular directories, probably need to change the c.googleapisDir
 	apiShortnames, err := parseAPIShortnames(c.googleapisDir, c.modules, generator.MicrogenGapicConfigs, generator.ManualEntries)
-
+	dirs := []string{}
+	for _, module := range c.modules {
+		dirs = append(dirs, filepath.Join(c.googleCloudDir, module))
+	}
 	if err != nil {
 		return err
 	}
-	if err := gensnippets.GenerateSnippetsDirs(c.googleCloudDir, snippetDir, apiShortnames, c.modules); err != nil {
+	if err := gensnippets.GenerateSnippetsDirs(c.googleCloudDir, snippetDir, apiShortnames, dirs); err != nil {
 		log.Printf("warning: got the following non-fatal errors generating snippets: %v", err)
 	}
 	if err := c.replaceAllForSnippets(c.googleCloudDir, snippetDir); err != nil {
@@ -164,19 +167,31 @@ func (c *config) RegenSnippets() error {
 
 func parseAPIShortnames(googleapisDir string, scopes []string, confs []*generator.MicrogenConfig, manualEntries []generator.ManifestEntry) (map[string]string, error) {
 	shortnames := map[string]string{}
-	for _, conf := range confs {
-		confInScope := false
-		if len(scopes) == 0 {
-			confInScope = true
-		}
-		for _, scope := range scopes {
-			if scope == conf.Pkg {
-				confInScope = true
+	runConfs := confs
+	if len(scopes) != 0 {
+		runConfs = []*generator.MicrogenConfig{}
+		for _, conf := range confs {
+			topMod := strings.Split(strings.TrimPrefix(strings.TrimPrefix(conf.InputDirectoryPath, "google/"), "cloud/"), "/")[0]
+			for _, scope := range scopes {
+				if scope == topMod {
+					runConfs = append(runConfs, conf)
+				}
 			}
 		}
-		if !confInScope {
-			continue
-		}
+	}
+	for _, conf := range runConfs {
+		// confInScope := false
+		// if len(scopes) == 0 {
+		// 	confInScope = true
+		// }
+		// for _, scope := range scopes {
+		// 	if scope == conf.Pkg {
+		// 		confInScope = true
+		// 	}
+		// }
+		// if !confInScope {
+		// 	continue
+		// }
 		yamlPath := filepath.Join(googleapisDir, conf.InputDirectoryPath, conf.ApiServiceConfigPath)
 		yamlFile, err := os.Open(yamlPath)
 		if err != nil {
@@ -189,11 +204,7 @@ func parseAPIShortnames(googleapisDir string, scopes []string, confs []*generato
 			return nil, fmt.Errorf("decode: %v", err)
 		}
 		shortname := strings.TrimSuffix(config.Name, ".googleapis.com")
-		for _, scope := range scopes {
-			if shortname == scope {
-				shortnames[conf.ImportPath] = shortname
-			}
-		}
+		shortnames[conf.ImportPath] = shortname
 	}
 
 	// Do our best for manuals.
