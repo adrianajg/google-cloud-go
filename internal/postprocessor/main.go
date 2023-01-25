@@ -125,18 +125,19 @@ func (c *config) run(ctx context.Context) error {
 		return err
 	}
 	c.modules = append(c.modules, modules...)
-	// if err := gocmd.ModTidyAll(c.googleCloudDir); err != nil {
-	// 	return err
-	// }
-	// if err := gocmd.Vet(c.googleCloudDir); err != nil {
-	// 	return err
-	// }
+	log.Println("Modules found from PR are %v, c.modules is now %v", modules, c.modules)
+	if err := gocmd.ModTidyAll(c.googleCloudDir); err != nil {
+		return err
+	}
+	if err := gocmd.Vet(c.googleCloudDir); err != nil {
+		return err
+	}
 	if err := c.RegenSnippets(); err != nil {
 		return err
 	}
-	// if _, err := c.Manifest(generator.MicrogenGapicConfigs); err != nil {
-	// 	return err
-	// }
+	if _, err := c.Manifest(generator.MicrogenGapicConfigs); err != nil {
+		return err
+	}
 
 	return nil
 }
