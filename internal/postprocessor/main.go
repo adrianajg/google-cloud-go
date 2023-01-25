@@ -120,6 +120,11 @@ type config struct {
 }
 
 func (c *config) run(ctx context.Context) error {
+	modules, err := c.AmendPRDescription(ctx)
+	if err != nil {
+		return err
+	}
+	c.modules = append(c.modules, modules...)
 	// if err := gocmd.ModTidyAll(c.googleCloudDir); err != nil {
 	// 	return err
 	// }
@@ -132,9 +137,7 @@ func (c *config) run(ctx context.Context) error {
 	// if _, err := c.Manifest(generator.MicrogenGapicConfigs); err != nil {
 	// 	return err
 	// }
-	// if err := c.AmendPRDescription(ctx); err != nil {
-	// 	return err
-	// }
+
 	return nil
 }
 
@@ -180,18 +183,6 @@ func parseAPIShortnames(googleapisDir string, scopes []string, confs []*generato
 		}
 	}
 	for _, conf := range runConfs {
-		// confInScope := false
-		// if len(scopes) == 0 {
-		// 	confInScope = true
-		// }
-		// for _, scope := range scopes {
-		// 	if scope == conf.Pkg {
-		// 		confInScope = true
-		// 	}
-		// }
-		// if !confInScope {
-		// 	continue
-		// }
 		yamlPath := filepath.Join(googleapisDir, conf.InputDirectoryPath, conf.ApiServiceConfigPath)
 		yamlFile, err := os.Open(yamlPath)
 		if err != nil {
@@ -313,23 +304,24 @@ func docURL(cloudDir, importPath string) (string, error) {
 	return "https://cloud.google.com/go/docs/reference/" + mod + "/latest/" + pkgPath, nil
 }
 
-func (c *config) AmendPRDescription(ctx context.Context) error {
+func (c *config) AmendPRDescription(ctx context.Context) ([]string, error) {
 	log.Println("Amending PR title and body")
 	pr, err := c.getPR(ctx)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	newPRTitle, newPRBody, err := c.processCommit(*pr.Title, *pr.Body)
+	newPRTitle, newPRBody, modules, err := c.processCommit(*pr.Title, *pr.Body)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	return c.writePRCommitToFile(newPRTitle, newPRBody)
+	return modules, c.writePRCommitToFile(newPRTitle, newPRBody)
 }
 
-func (c *config) processCommit(title, body string) (string, string, error) {
+func (c *config) processCommit(title, body string) (string, string, []string, error) {
 	var newPRTitle string
 	var commitTitle string
 	var commitTitleIndex int
+	var modules []string
 
 	bodySlice := strings.Split(body, "\n")
 	for index, line := range bodySlice {
@@ -345,9 +337,14 @@ func (c *config) processCommit(title, body string) (string, string, error) {
 			continue
 		}
 		hash := extractHashFromLine(line)
-		scope, err := c.getScopeFromGoogleapisCommitHash(hash)
+		scopes, err := c.getScopeFromGoogleapisCommitHash(hash)
+		modules = append(modules, scopes...)
+		scope := ""
+		if len(scopes) == 1 {
+			scope = scopes[0]
+		}
 		if err != nil {
-			return "", "", err
+			return "", "", []string{}, err
 		}
 		if newPRTitle == "" {
 			newPRTitle = updateCommitTitle(title, scope)
@@ -357,7 +354,7 @@ func (c *config) processCommit(title, body string) (string, string, error) {
 		bodySlice[commitTitleIndex] = newCommitTitle
 	}
 	body = strings.Join(bodySlice, "\n")
-	return newPRTitle, body, nil
+	return newPRTitle, body, modules, nil
 }
 
 func (c *config) getPR(ctx context.Context) (*github.PullRequest, error) {
@@ -378,14 +375,14 @@ func (c *config) getPR(ctx context.Context) (*github.PullRequest, error) {
 	return owlbotPR, nil
 }
 
-func (c *config) getScopeFromGoogleapisCommitHash(commitHash string) (string, error) {
+func (c *config) getScopeFromGoogleapisCommitHash(commitHash string) ([]string, error) {
 	files, err := c.filesChanged(commitHash)
 	if err != nil {
-		return "", err
+		return []string{}, err
 	}
 	// if no files changed, return empty string
 	if len(files) == 0 {
-		return "", nil
+		return []string{}, nil
 	}
 	scopesMap := make(map[string]bool)
 	scopes := []string{}
@@ -401,12 +398,7 @@ func (c *config) getScopeFromGoogleapisCommitHash(commitHash string) (string, er
 			}
 		}
 	}
-	// if no in-scope packages are found or if many packages found, return empty string
-	if len(scopes) != 1 {
-		return "", nil
-	}
-	// if single scope found, return
-	return scopes[0], nil
+	return scopes, nil
 }
 
 // filesChanged returns a list of files changed in a commit for the provdied
